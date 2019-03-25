@@ -13,8 +13,9 @@ def softmax(predictions):
       probs, np array of the same shape as predictions - 
         probability for every class, 0..1
     '''
-    # TODO implement softmax
-    raise Exception("Not implemented!")
+    res = []
+    predictions -= np.max(predictions)
+    return np.exp(predictions) / np.sum(np.exp(predictions))
 
 
 def cross_entropy_loss(probs, target_index):
@@ -30,8 +31,9 @@ def cross_entropy_loss(probs, target_index):
     Returns:
       loss: single value
     '''
-    # TODO implement cross-entropy
-    raise Exception("Not implemented!")
+    p = np.zeros(len(probs))
+    p[target_index] = 1
+    return - np.sum(p * np.log(probs))
 
 
 def softmax_with_cross_entropy(predictions, target_index):
@@ -50,6 +52,13 @@ def softmax_with_cross_entropy(predictions, target_index):
       dprediction, np array same shape as predictions - gradient of predictions by loss value
     '''
     # TODO implement softmax with cross-entropy
+    predictions -= np.max(predictions)
+    q = np.exp(predictions) / np.sum(np.exp(predictions))
+    p = np.zeros(len(predictions))
+    p[target_index] = 1
+    return - np.sum(p * np.log(q))
+
+
     raise Exception("Not implemented!")
 
     return loss, dprediction

@@ -31,9 +31,12 @@ def cross_entropy_loss(probs, target_index):
     Returns:
       loss: single value
     '''
-    p = np.zeros(len(probs))
-    p[target_index] = 1
-    return - np.sum(p * np.log(probs))
+    if len(probs.shape) == 1:
+        probs = np.array([probs])
+    batch_size = probs.shape[0]
+    p = np.zeros_like(probs)
+    p[:, target_index] = 1
+    return - np.sum(p * np.log(probs)) / batch_size
 
 
 def softmax_with_cross_entropy(predictions, target_index):
@@ -52,14 +55,12 @@ def softmax_with_cross_entropy(predictions, target_index):
       dprediction, np array same shape as predictions - gradient of predictions by loss value
     '''
     # TODO implement softmax with cross-entropy
-    predictions -= np.max(predictions)
-    q = np.exp(predictions) / np.sum(np.exp(predictions))
-    p = np.zeros(len(predictions))
-    p[target_index] = 1
-    return - np.sum(p * np.log(q))
-
-
-    raise Exception("Not implemented!")
+    shift_pred = predictions - np.max(predictions, axis=-1)[:, np.newaxis]
+    denom = np.sum(np.exp(shift_pred), axis=-1)[:, np.newaxis]
+    probs = np.exp(shift_pred) / denom
+    target_idx_mat = np.reshape(np.eye(probs.shape[-1])[target_index], predictions.shape)
+    loss = -np.sum(target_idx_mat * np.log(probs))
+    dprediction = (probs - target_idx_mat)
 
     return loss, dprediction
 
@@ -77,9 +78,8 @@ def l2_regularization(W, reg_strength):
       gradient, np.array same shape as W - gradient of weight by l2 loss
     '''
 
-    # TODO: implement l2 regularization and gradient
-    raise Exception("Not implemented!")
-
+    loss = reg_strength * np.sum(np.square(W))
+    grad = 2.0 * W * reg_strength
     return loss, grad
     
 
@@ -98,10 +98,8 @@ def linear_softmax(X, W, target_index):
 
     '''
     predictions = np.dot(X, W)
-
-    # TODO implement prediction and gradient over W
-    raise Exception("Not implemented!")
-    
+    loss, dS = softmax_with_cross_entropy(predictions, target_index)
+    dW = np.dot(X.T, dS)
     return loss, dW
 
 
@@ -141,9 +139,16 @@ class LinearSoftmaxClassifier():
             # Apply gradient to weights using learning rate
             # Don't forget to add both cross-entropy loss
             # and regularization!
-            raise Exception("Not implemented!")
-
-            # end
+            loss = 0.0
+            for batch_idx in batches_indices:
+                X_b = X[batch_idx]
+                y_b = y[batch_idx]
+                m_loss, m_grad = linear_softmax(X_b, self.W, y_b)
+                l2_loss, l2_grad = l2_regularization(self.W, reg)
+                loss += (m_loss + l2_loss) * learning_rate / batch_size
+                grad = (m_grad + l2_grad) * learning_rate / batch_size
+                self.W -= grad
+            loss_history.append(loss)
             print("Epoch %i, loss: %f" % (epoch, loss))
 
         return loss_history
@@ -158,11 +163,9 @@ class LinearSoftmaxClassifier():
         Returns:
           y_pred, np.array of int (test_samples)
         '''
-        y_pred = np.zeros(X.shape[0], dtype=np.int)
-
-        # TODO Implement class prediction
-        raise Exception("Not implemented!")
-
+        preds = np.dot(X, self.W)
+        probs = softmax(preds)
+        y_pred = probs.argmax(1)
         return y_pred
 
 

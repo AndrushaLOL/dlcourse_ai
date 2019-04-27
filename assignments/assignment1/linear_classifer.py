@@ -13,7 +13,6 @@ def softmax(predictions):
       probs, np array of the same shape as predictions - 
         probability for every class, 0..1
     '''
-    res = []
     predictions -= np.max(predictions)
     return np.exp(predictions) / np.sum(np.exp(predictions))
 
@@ -31,12 +30,8 @@ def cross_entropy_loss(probs, target_index):
     Returns:
       loss: single value
     '''
-    if len(probs.shape) == 1:
-        probs = np.array([probs])
-    batch_size = probs.shape[0]
-    p = np.zeros_like(probs)
-    p[:, target_index] = 1
-    return - np.sum(p * np.log(probs)) / batch_size
+    target_idx_mat = np.eye(probs.shape[0])[target_index]
+    return -np.sum(target_idx_mat * np.log(probs))
 
 
 def softmax_with_cross_entropy(predictions, target_index):
@@ -55,7 +50,8 @@ def softmax_with_cross_entropy(predictions, target_index):
       dprediction, np array same shape as predictions - gradient of predictions by loss value
     '''
     # TODO implement softmax with cross-entropy
-    shift_pred = predictions - np.max(predictions, axis=-1)[:, np.newaxis]
+    m = np.max(predictions, axis=-1)[:, np.newaxis]
+    shift_pred = predictions - m
     denom = np.sum(np.exp(shift_pred), axis=-1)[:, np.newaxis]
     probs = np.exp(shift_pred) / denom
     target_idx_mat = np.reshape(np.eye(probs.shape[-1])[target_index], predictions.shape)
@@ -149,7 +145,8 @@ class LinearSoftmaxClassifier():
                 grad = (m_grad + l2_grad) * learning_rate / batch_size
                 self.W -= grad
             loss_history.append(loss)
-            print("Epoch %i, loss: %f" % (epoch, loss))
+            if epoch % 50 == 0:
+                print("Epoch %i, loss: %f" % (epoch, loss))
 
         return loss_history
 

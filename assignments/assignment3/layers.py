@@ -14,8 +14,8 @@ def l2_regularization(W, reg_strength):
       gradient, np.array same shape as W - gradient of weight by l2 loss
     '''
     # TODO: Copy from previous assignment
-    raise Exception("Not implemented!")
-
+    loss = reg_strength * np.sum(np.square(W))
+    grad = 2.0 * W * reg_strength
     return loss, grad
 
 
@@ -35,7 +35,14 @@ def softmax_with_cross_entropy(predictions, target_index):
       dprediction, np array same shape as predictions - gradient of predictions by loss value
     '''
     # TODO copy from the previous assignment
-    raise Exception("Not implemented!")
+    N = predictions.shape[0]
+    shift_pred = predictions - np.max(predictions, axis=-1)[:, np.newaxis]
+    denom = np.sum(np.exp(shift_pred), axis=-1)[:, np.newaxis]
+    probs = np.exp(shift_pred) / denom
+    target_idx_mat = np.reshape(np.eye(probs.shape[-1])[target_index], predictions.shape)
+    loss = -np.sum(target_idx_mat * np.log(probs)) / N
+    dprediction = (probs - target_idx_mat) / N
+
     return loss, dprediction
 
 
@@ -55,11 +62,12 @@ class ReLULayer:
 
     def forward(self, X):
         # TODO copy from the previous assignment
-        raise Exception("Not implemented!")
+        self.pos = (X >= 0).astype(float)
+        return np.maximum(X, np.zeros_like(X))
 
     def backward(self, d_out):
         # TODO copy from the previous assignment
-        raise Exception("Not implemented!")
+        d_result = d_out * self.pos
         return d_result
 
     def params(self):
@@ -74,13 +82,15 @@ class FullyConnectedLayer:
 
     def forward(self, X):
         # TODO copy from the previous assignment
-        raise Exception("Not implemented!")
+        self.X = X.copy()
+        return np.dot(X, self.W.value) + self.B.value
 
     def backward(self, d_out):
         # TODO copy from the previous assignment
-        
-        raise Exception("Not implemented!")        
-        return d_input
+
+        self.W.grad = np.dot(self.X.T, d_out)
+        self.B.grad = np.sum(d_out, axis=0).reshape(1, -1)
+        res = np.dot(d_out, self.W.value.T)
 
     def params(self):
         return { 'W': self.W, 'B': self.B }
